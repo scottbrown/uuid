@@ -65,4 +65,10 @@ task release
 ```
 
 ### Version Management
-The version is embedded during build using ldflags: `-ldflags "-X github.com/scottbrown/uuid/cmd.version={{.VERSION}}"`
+The version is constructed from two components embedded during build using ldflags:
+- **Version string**: Git tag (if on exact match), current branch name, or "dev"
+- **Build string**: Short git commit hash or "unknown"
+
+Build command: `-ldflags "-X github.com/scottbrown/uuid/cmd.version={{.VERSION}} -X github.com/scottbrown/uuid/cmd.build={{.BUILD}}"`
+
+The final version displayed combines both: `version+build` (e.g., "v1.2.3+abc1234" or "main+def5678")
