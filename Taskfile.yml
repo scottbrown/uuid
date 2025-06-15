@@ -6,9 +6,11 @@ vars:
   DIST_DIR: .dist
   TEST_DIR: .test
   VERSION:
-    sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
+    sh: git describe --tags --exact-match 2>/dev/null || git branch --show-current 2>/dev/null || echo "dev"
+  BUILD:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo "unknown"
 
-  LDFLAGS: "-ldflags \"-X github.com/scottbrown/uuid/cmd.version={{.VERSION}}\""
+  LDFLAGS: "-ldflags \"-X github.com/scottbrown/uuid/cmd.version={{.VERSION}} -X github.com/scottbrown/uuid/cmd.build={{.BUILD}}\""
   
   # Platform and architecture combinations
   PLATFORMS: |

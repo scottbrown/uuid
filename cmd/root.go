@@ -8,7 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var version = "1.0.0" // Default version, can be overridden by build flags
+var (
+	version = "dev"     // Default version, can be overridden by build flags
+	build   = "unknown" // Default build, can be overridden by build flags
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -91,6 +94,10 @@ func init() {
 	// Make version flags mutually exclusive
 	rootCmd.MarkFlagsMutuallyExclusive("4", "6", "7")
 
-	// Set version for --version flag
-	rootCmd.Version = version
+	// Set version for --version flag (combine version and build)
+	if build != "unknown" && build != "" {
+		rootCmd.Version = fmt.Sprintf("%s+%s", version, build)
+	} else {
+		rootCmd.Version = version
+	}
 }
