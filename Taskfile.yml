@@ -5,6 +5,8 @@ vars:
   BUILD_DIR: .build
   DIST_DIR: .dist
   TEST_DIR: .test
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
 
   LDFLAGS: "-ldflags \"-X github.com/scottbrown/uuid/cmd.version={{.VERSION}}\""
   
@@ -87,6 +89,7 @@ tasks:
         vars:
           GOOS: linux
           GOARCH: amd64
+          FILENAME: "{{.BINARY_NAME}}"
   
   build-linux-arm64:
     desc: Build Linux ARM64 binary
@@ -95,6 +98,7 @@ tasks:
         vars:
           GOOS: linux
           GOARCH: arm64
+          FILENAME: "{{.BINARY_NAME}}"
 
   build-darwin-amd64:
     desc: Build macOS AMD64 binary
@@ -103,6 +107,7 @@ tasks:
         vars:
           GOOS: darwin
           GOARCH: amd64
+          FILENAME: "{{.BINARY_NAME}}"
   
   build-darwin-arm64:
     desc: Build macOS ARM64 binary
@@ -111,6 +116,7 @@ tasks:
         vars:
           GOOS: darwin
           GOARCH: arm64
+          FILENAME: "{{.BINARY_NAME}}"
   
   build-windows-amd64:
     desc: Build Windows AMD64 binary
@@ -152,15 +158,14 @@ tasks:
     env:
       GOOS: "{{.GOOS}}"
       GOARCH: "{{.GOARCH}}"
+    vars:
+      FILENAME: "{{.FILENAME | default .BINARY_NAME}}"
     cmds:
       - go build {{.LDFLAGS}} -o {{.BUILD_DIR}}/{{.GOOS}}-{{.GOARCH}}/{{.FILENAME}} .
-    required:
+    requires:
       vars:
         - GOOS
         - GOARCH
-        - FILENAME
-        - BUILD_DIR
-        - LDFLAGS
     generates:
       - "{{.BUILD_DIR}}/{{.GOOS}}-{{.GOARCH}}/{{.FILENAME}}"
   
