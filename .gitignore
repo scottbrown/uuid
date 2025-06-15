@@ -27,6 +27,15 @@ go.work.sum
 # env file
 .env
 
+# Build and distribution directories
+.build/
+.dist/
+.test/
+
+# Local binaries
+uuid
+uuid-*
+
 # Editor/IDE
 # .idea/
 # .vscode/

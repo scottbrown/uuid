@@ -1,0 +1,243 @@
+version: '3'
+
+vars:
+  BINARY_NAME: uuid
+  BUILD_DIR: .build
+  DIST_DIR: .dist
+  TEST_DIR: .test
+
+  LDFLAGS: "-ldflags \"-X github.com/scottbrown/uuid/cmd.version={{.VERSION}}\""
+  
+  # Platform and architecture combinations
+  PLATFORMS: |
+    linux/amd64
+    linux/arm64
+    darwin/amd64
+    darwin/arm64
+    windows/amd64
+    windows/arm64
+
+tasks:
+  default:
+    desc: Build local binary
+    cmds:
+      - task: build
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf {{.BUILD_DIR}} {{.DIST_DIR}} {{.TEST_DIR}}
+
+  setup:
+    desc: Create necessary directories
+    run: once
+    silent: true
+    cmds:
+      - mkdir -p {{.BUILD_DIR}}
+      - mkdir -p {{.DIST_DIR}}
+      - mkdir -p {{.TEST_DIR}}
+
+  format:
+    desc: Format code using gofmt
+    run: once
+    silent: true
+    cmds:
+      - go fmt ./...
+      - go mod tidy
+
+  lint:
+    desc: Run linting (requires golangci-lint)
+    cmds:
+      - golangci-lint run
+    silent: true
+
+  test:
+    desc: Run unit tests
+    deps: [setup]
+    cmds:
+      - go test -v ./...
+
+  coverage:
+    desc: Run test coverage analysis
+    deps: [setup]
+    cmds:
+      - go test -v -coverprofile={{.TEST_DIR}}/coverage.out ./...
+      - go tool cover -html={{.TEST_DIR}}/coverage.out -o {{.TEST_DIR}}/coverage.html
+      - go tool cover -func={{.TEST_DIR}}/coverage.out
+    generates:
+      - "{{.TEST_DIR}}/coverage.out"
+      - "{{.TEST_DIR}}/coverage.html"
+
+  build:
+    desc: Build local binary for current platform
+    deps: [setup, format]
+    cmds:
+      - go build {{.LDFLAGS}} -o {{.BUILD_DIR}}/{{.BINARY_NAME}} .
+    generates:
+      - "{{.BUILD_DIR}}/{{.BINARY_NAME}}"
+
+  build-all:
+    desc: Build binaries for all platforms
+    deps: [build-linux, build-darwin, build-windows]
+
+  build-linux-amd64:
+    desc: Build Linux AMD64 binary
+    cmds:
+      - task: build-generic
+        vars:
+          GOOS: linux
+          GOARCH: amd64
+  
+  build-linux-arm64:
+    desc: Build Linux ARM64 binary
+    cmds:
+      - task: build-generic
+        vars:
+          GOOS: linux
+          GOARCH: arm64
+
+  build-darwin-amd64:
+    desc: Build macOS AMD64 binary
+    cmds:
+      - task: build-generic
+        vars:
+          GOOS: darwin
+          GOARCH: amd64
+  
+  build-darwin-arm64:
+    desc: Build macOS ARM64 binary
+    cmds:
+      - task: build-generic
+        vars:
+          GOOS: darwin
+          GOARCH: arm64
+  
+  build-windows-amd64:
+    desc: Build Windows AMD64 binary
+    cmds:
+      - task: build-generic
+        vars:
+          GOOS: windows
+          GOARCH: amd64
+          FILENAME: "{{.BINARY_NAME}}.exe"
+
+  build-windows-arm64:
+    desc: Build Windows ARM64 binary
+    cmds:
+      - task: build-generic
+        vars:
+          GOOS: windows
+          GOARCH: arm64
+          FILENAME: "{{.BINARY_NAME}}.exe"
+
+  build-linux:
+    cmds:
+      - task: build-linux-amd64
+      - task: build-linux-arm64
+  
+  build-darwin:
+    cmds:
+      - task: build-darwin-amd64
+      - task: build-darwin-arm64
+  
+  build-windows:
+    cmds:
+      - task: build-windows-amd64
+      - task: build-windows-arm64
+  
+  build-generic:
+    desc: Build a generic binary for a specific platform
+    silent: true
+    deps: [setup, format]
+    env:
+      GOOS: "{{.GOOS}}"
+      GOARCH: "{{.GOARCH}}"
+    cmds:
+      - go build {{.LDFLAGS}} -o {{.BUILD_DIR}}/{{.GOOS}}-{{.GOARCH}}/{{.FILENAME}} .
+    required:
+      vars:
+        - GOOS
+        - GOARCH
+        - FILENAME
+        - BUILD_DIR
+        - LDFLAGS
+    generates:
+      - "{{.BUILD_DIR}}/{{.GOOS}}-{{.GOARCH}}/{{.FILENAME}}"
+  
+  package:
+    desc: Package binaries into compressed archives
+    deps: [build-all]
+    cmds:
+      # Linux packages (tar.gz)
+      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-linux-amd64.tar.gz -C {{.BUILD_DIR}}/linux-amd64 {{.BINARY_NAME}}
+      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-linux-arm64.tar.gz -C {{.BUILD_DIR}}/linux-arm64 {{.BINARY_NAME}}
+      
+      # macOS packages (tar.gz)
+      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-darwin-amd64.tar.gz -C {{.BUILD_DIR}}/darwin-amd64 {{.BINARY_NAME}}
+      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-darwin-arm64.tar.gz -C {{.BUILD_DIR}}/darwin-arm64 {{.BINARY_NAME}}
+      
+      # Windows package (zip)
+      - cd {{.BUILD_DIR}}/windows-amd64 && zip ../{{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-windows-amd64.zip {{.BINARY_NAME}}.exe
+      - cd {{.BUILD_DIR}}/windows-arm64 && zip ../{{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-windows-arm64.zip {{.BINARY_NAME}}.exe
+
+  package-all:
+    desc: Package all binaries into compressed archives
+    deps: [build-all]
+    cmds:
+      - task: package-linux
+      - task: package-darwin
+      - task: package-windows
+
+  package-linux:
+    desc: Package Linux binaries into tar.gz archives
+    cmds:
+      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-linux-amd64.tar.gz -C {{.BUILD_DIR}}/linux-amd64 {{.BINARY_NAME}}
+      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-linux-arm64.tar.gz -C {{.BUILD_DIR}}/linux-arm64 {{.BINARY_NAME}}
+  
+  package-darwin:
+    desc: Package macOS binaries into tar.gz archives
+    cmds:
+      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-darwin-amd64.tar.gz -C {{.BUILD_DIR}}/darwin-amd64 {{.BINARY_NAME}}
+      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-darwin-arm64.tar.gz -C {{.BUILD_DIR}}/darwin-arm64 {{.BINARY_NAME}}
+
+  package-windows: 
+    desc: Package Windows binaries into zip archives
+    cmds:
+      - task: package-generic-zip
+        vars:
+          GOOS: windows
+          GOARCH: amd64
+          FILENAME: "{{.BINARY_NAME}}.exe"
+      - task: package-generic-zip
+        vars:
+          GOOS: windows
+          GOARCH: arm64
+          FILENAME: "{{.BINARY_NAME}}.exe"  
+  
+  package-generic-zip:
+    internal: true
+    silent: true
+    env:
+      GOOS: "{{.GOOS}}"
+      GOARCH: "{{.GOARCH}}"
+    cmds:
+      - cd {{.BUILD_DIR}}/{{.GOOS}}-{{.GOARCH}} && zip ../{{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-{{.GOOS}}-{{.GOARCH}}.zip {{.FILENAME}}
+    required:
+      vars:
+        - FILENAME
+  
+  release:
+    desc: Create a full release (test, build, package)
+    deps: [clean]
+    cmds:
+      - task: test
+      - task: coverage
+      - task: build-all
+      - task: package
+
+  dev:
+    desc: Development workflow (format, test, build)
+    cmds:
+      - task: format
+      - task: test
+      - task: build
