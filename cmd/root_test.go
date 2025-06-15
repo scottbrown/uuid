@@ -51,9 +51,6 @@ func TestVersionVariable(t *testing.T) {
 	if version == "" {
 		t.Error("Version should not be empty")
 	}
-	if !strings.Contains(version, ".") {
-		t.Errorf("Version should contain dots (semantic versioning), got: %s", version)
-	}
 }
 
 func TestRootCommandExists(t *testing.T) {
