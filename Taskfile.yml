@@ -12,15 +12,6 @@ vars:
 
   LDFLAGS: "-ldflags \"-X github.com/scottbrown/uuid/cmd.version={{.VERSION}} -X github.com/scottbrown/uuid/cmd.build={{.BUILD}}\""
   
-  # Platform and architecture combinations
-  PLATFORMS: |
-    linux/amd64
-    linux/arm64
-    darwin/amd64
-    darwin/arm64
-    windows/amd64
-    windows/arm64
-
 tasks:
   default:
     desc: Build local binary
@@ -47,13 +38,6 @@ tasks:
     silent: true
     cmds:
       - go fmt ./...
-      - go mod tidy
-
-  lint:
-    desc: Run linting (requires golangci-lint)
-    cmds:
-      - golangci-lint run
-    silent: true
 
   test:
     desc: Run unit tests
@@ -82,6 +66,7 @@ tasks:
 
   build-all:
     desc: Build binaries for all platforms
+    run: once
     deps: [build-linux, build-darwin, build-windows]
 
   build-linux-amd64:
@@ -175,22 +160,6 @@ tasks:
     desc: Package binaries into compressed archives
     deps: [build-all]
     cmds:
-      # Linux packages (tar.gz)
-      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-linux-amd64.tar.gz -C {{.BUILD_DIR}}/linux-amd64 {{.BINARY_NAME}}
-      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-linux-arm64.tar.gz -C {{.BUILD_DIR}}/linux-arm64 {{.BINARY_NAME}}
-      
-      # macOS packages (tar.gz)
-      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-darwin-amd64.tar.gz -C {{.BUILD_DIR}}/darwin-amd64 {{.BINARY_NAME}}
-      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-darwin-arm64.tar.gz -C {{.BUILD_DIR}}/darwin-arm64 {{.BINARY_NAME}}
-      
-      # Windows package (zip)
-      - cd {{.BUILD_DIR}}/windows-amd64 && zip ../{{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-windows-amd64.zip {{.BINARY_NAME}}.exe
-      - cd {{.BUILD_DIR}}/windows-arm64 && zip ../{{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-windows-arm64.zip {{.BINARY_NAME}}.exe
-
-  package-all:
-    desc: Package all binaries into compressed archives
-    deps: [build-all]
-    cmds:
       - task: package-linux
       - task: package-darwin
       - task: package-windows
@@ -198,14 +167,26 @@ tasks:
   package-linux:
     desc: Package Linux binaries into tar.gz archives
     cmds:
-      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-linux-amd64.tar.gz -C {{.BUILD_DIR}}/linux-amd64 {{.BINARY_NAME}}
-      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-linux-arm64.tar.gz -C {{.BUILD_DIR}}/linux-arm64 {{.BINARY_NAME}}
+      - task: package-generic-tarball
+        vars:
+          GOOS: linux
+          GOARCH: amd64
+      - task: package-generic-tarball
+        vars:
+          GOOS: linux
+          GOARCH: arm64
   
   package-darwin:
     desc: Package macOS binaries into tar.gz archives
     cmds:
-      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-darwin-amd64.tar.gz -C {{.BUILD_DIR}}/darwin-amd64 {{.BINARY_NAME}}
-      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-darwin-arm64.tar.gz -C {{.BUILD_DIR}}/darwin-arm64 {{.BINARY_NAME}}
+      - task: package-generic-tarball
+        vars:
+          GOOS: darwin
+          GOARCH: amd64
+      - task: package-generic-tarball
+        vars:
+          GOOS: darwin
+          GOARCH: arm64
 
   package-windows: 
     desc: Package Windows binaries into zip archives
@@ -220,6 +201,15 @@ tasks:
           GOOS: windows
           GOARCH: arm64
           FILENAME: "{{.BINARY_NAME}}.exe"  
+
+  package-generic-tarball:
+    internal: true
+    silent: true
+    env:
+      GOOS: "{{.GOOS}}"
+      GOARCH: "{{.GOARCH}}"
+    cmds:
+      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-{{.GOOS}}-{{.GOARCH}}.tar.gz -C {{.BUILD_DIR}}/{{.GOOS}}-{{.GOARCH}} {{.BINARY_NAME}}
   
   package-generic-zip:
     internal: true
@@ -228,23 +218,7 @@ tasks:
       GOOS: "{{.GOOS}}"
       GOARCH: "{{.GOARCH}}"
     cmds:
-      - cd {{.BUILD_DIR}}/{{.GOOS}}-{{.GOARCH}} && zip ../{{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-{{.GOOS}}-{{.GOARCH}}.zip {{.FILENAME}}
+      - cd {{.BUILD_DIR}}/{{.GOOS}}-{{.GOARCH}} && zip ../../{{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-{{.GOOS}}-{{.GOARCH}}.zip {{.FILENAME}}
     required:
       vars:
         - FILENAME
-  
-  release:
-    desc: Create a full release (test, build, package)
-    deps: [clean]
-    cmds:
-      - task: test
-      - task: coverage
-      - task: build-all
-      - task: package
-
-  dev:
-    desc: Development workflow (format, test, build)
-    cmds:
-      - task: format
-      - task: test
-      - task: build
