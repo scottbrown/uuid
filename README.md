@@ -9,7 +9,6 @@ A simple command-line interface (CLI) application for generating UUIDs, written 
 - Support for multiple timestamp formats (Unix, RFC3339, ISO dates)
 - Cross-platform support (Windows, Linux, macOS on amd64 and arm64)
 - Simple command-line interface
-- Built with Go and Cobra CLI framework
 
 ## Installation
 
@@ -61,6 +60,8 @@ uuid -7
 ```
 
 ### Timestamp-based UUIDv7 Generation
+
+`uuid` can also generate historical UUIDv7 values, because UUIDv7 is partially formed with a timestamp element.
 
 ```bash
 # Generate UUIDv7 from Unix timestamp (seconds)
@@ -136,24 +137,20 @@ The timestamp flag automatically generates UUIDv7 and is incompatible with UUIDv
 
 ### Prerequisites
 
-- Go 1.19 or later
+- [Go Task](https://taskfile.dev/)
 
 ### Building
 
 ```bash
-go build -o uuid .
+go mod tidy
+task build
 ```
 
 ### Testing
 
 ```bash
-go test ./...
+task test
 ```
-
-### Dependencies
-
-- [spf13/cobra](https://github.com/spf13/cobra) - CLI framework
-- [google/uuid](https://github.com/google/uuid) - UUID generation library
 
 ## License
 

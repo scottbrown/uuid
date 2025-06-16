@@ -31,6 +31,7 @@ tasks:
       - mkdir -p {{.BUILD_DIR}}
       - mkdir -p {{.DIST_DIR}}
       - mkdir -p {{.TEST_DIR}}
+      - go mod tidy
 
   format:
     desc: Format code using gofmt
