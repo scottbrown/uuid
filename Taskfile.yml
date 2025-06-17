@@ -161,7 +161,7 @@ tasks:
       GOOS: linux
       GOARCH: amd64
     cmds:
-      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.GOOS}}-{{.GOARCH}}.tar.gz -C {{.BUILD_DIR}}/{{.GOOS}}-{{.GOARCH}} {{.BINARY_NAME}}{{.FILE_EXT}}
+      - tar -czf {{.DIST_DIR}}/{{.BINARY_NAME}}-{{.VERSION}}-{{.GOOS}}-{{.GOARCH}}.tar.gz -C {{.BUILD_DIR}}/{{.GOOS}}-{{.GOARCH}} {{.BINARY_NAME}}{{.FILE_EXT}}
 
   release-linux-amd64:
     cmds:
