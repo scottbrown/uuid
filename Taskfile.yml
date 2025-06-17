@@ -114,7 +114,7 @@ tasks:
       GOOS: "{{.GOOS}}"
       GOARCH: "{{.GOARCH}}"
     cmds:
-      - go build {{.FLAGS}} -o {{.BUILD_DIR}}/{{.GOOS}}-{{.GOARCH}}/{{.BINARY_NAME}}{{.FILE_EXT}} {{.REPO}}/cmd
+      - go build {{.FLAGS}} -o {{.BUILD_DIR}}/{{.GOOS}}-{{.GOARCH}}/{{.BINARY_NAME}}{{.FILE_EXT}} {{.REPO}}
 
   build-darwin-amd64:
     deps:
