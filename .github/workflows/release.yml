@@ -21,7 +21,7 @@ jobs:
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Compile all versions
-        run: task package
+        run: task release
       - name: Generate SBOM
         uses: CycloneDX/gh-gomod-generate-sbom@v2
         with:
@@ -33,6 +33,5 @@ jobs:
           files: |
             bom.json
             .dist/*.tar.gz
-            .dist/*.zip
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
