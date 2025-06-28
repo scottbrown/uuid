@@ -3,6 +3,7 @@ package generator
 import (
 	"crypto/rand"
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 
@@ -75,16 +76,53 @@ func generateUUIDv6Manual() string {
 	//         clock_seq_and_variant (16 bits) + node (48 bits)
 
 	// Get current time in 100-nanosecond intervals since UUID epoch (1582-10-15)
-	const uuidEpoch = 122192928000000000 // UUID epoch in 100ns intervals
-	now := time.Now().UnixNano() / 100   // Convert to 100ns intervals
-	timestamp := uint64(now) + uuidEpoch
+	const uuidEpoch = uint64(122192928000000000) // UUID epoch in 100ns intervals
+	now := time.Now().UnixNano() / 100          // Convert to 100ns intervals
+	
+	// Bounds checking for timestamp conversion to prevent integer overflow
+	var timestamp uint64
+	if now < 0 {
+		// Handle negative timestamps by using epoch time
+		timestamp = uuidEpoch
+	} else {
+		nowUint64 := uint64(now)
+		// Check if adding epoch would cause overflow
+		if nowUint64 > math.MaxUint64-uuidEpoch {
+			// Use maximum safe value to prevent overflow
+			timestamp = math.MaxUint64
+		} else {
+			timestamp = nowUint64 + uuidEpoch
+		}
+	}
 
 	var uuid [16]byte
 
-	// Reorder timestamp for UUIDv6 (high, mid, low)
-	timeHigh := uint32(timestamp >> 28)
-	timeMid := uint16(timestamp >> 12)
-	timeLow := uint16(timestamp & 0x0fff)
+	// Reorder timestamp for UUIDv6 (high, mid, low) with bounds checking
+	// Check bounds before narrowing conversions to prevent overflow
+	var timeHigh uint32
+	timeHighVal := timestamp >> 28
+	if timeHighVal > math.MaxUint32 {
+		timeHigh = math.MaxUint32
+	} else {
+		timeHigh = uint32(timeHighVal)
+	}
+	
+	var timeMid uint16
+	timeMidVal := (timestamp >> 12) & 0xFFFF
+	if timeMidVal > math.MaxUint16 {
+		timeMid = math.MaxUint16
+	} else {
+		timeMid = uint16(timeMidVal)
+	}
+	
+	// timeLow is already masked to 12 bits, so no overflow possible
+	timeLowVal := timestamp & 0x0fff
+	var timeLow uint16
+	if timeLowVal > math.MaxUint16 {
+		timeLow = math.MaxUint16
+	} else {
+		timeLow = uint16(timeLowVal) // Safe conversion as timeLowVal is masked to 12 bits (< 4096)
+	}
 
 	// Time high (32 bits)
 	uuid[0] = byte(timeHigh >> 24)
