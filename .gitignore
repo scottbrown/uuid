@@ -40,3 +40,4 @@ uuid-*
 # Editor/IDE
 # .idea/
 # .vscode/
+.claude
