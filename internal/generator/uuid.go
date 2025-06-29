@@ -36,8 +36,11 @@ func GenerateUUIDv7() string {
 }
 
 // GenerateUUIDv7WithTimestamp generates a UUIDv7 with a specific timestamp
+// SECURITY NOTE: UUIDv7 embeds the timestamp directly in the UUID, revealing timing information.
+// This is by design per RFC 9562 but may not be suitable for privacy-sensitive applications.
 func GenerateUUIDv7WithTimestamp(timestamp time.Time) string {
 	// UUIDv7 format: timestamp (48 bits) + random (74 bits) + version (4 bits) + variant (2 bits)
+	// WARNING: The timestamp is embedded in the first 48 bits and can be extracted by anyone
 	timestampMs := timestamp.UnixMilli()
 
 	// Create 16 bytes for UUID
@@ -77,8 +80,8 @@ func generateUUIDv6Manual() string {
 
 	// Get current time in 100-nanosecond intervals since UUID epoch (1582-10-15)
 	const uuidEpoch = uint64(122192928000000000) // UUID epoch in 100ns intervals
-	now := time.Now().UnixNano() / 100          // Convert to 100ns intervals
-	
+	now := time.Now().UnixNano() / 100           // Convert to 100ns intervals
+
 	// Bounds checking for timestamp conversion to prevent integer overflow
 	var timestamp uint64
 	if now < 0 {
@@ -106,7 +109,7 @@ func generateUUIDv6Manual() string {
 	} else {
 		timeHigh = uint32(timeHighVal)
 	}
-	
+
 	var timeMid uint16
 	timeMidVal := (timestamp >> 12) & 0xFFFF
 	if timeMidVal > math.MaxUint16 {
@@ -114,7 +117,7 @@ func generateUUIDv6Manual() string {
 	} else {
 		timeMid = uint16(timeMidVal)
 	}
-	
+
 	// timeLow is already masked to 12 bits, so no overflow possible
 	timeLowVal := timestamp & 0x0fff
 	var timeLow uint16

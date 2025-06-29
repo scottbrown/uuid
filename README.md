@@ -133,6 +133,28 @@ When using the `-t` flag, you can provide timestamps in various formats:
 
 The timestamp flag automatically generates UUIDv7 and is incompatible with UUIDv4 or UUIDv6 flags.
 
+## Security Considerations
+
+### UUIDv7 Timestamp Disclosure
+
+**Important**: UUIDv7 contains an embedded timestamp that reveals when the UUID was generated. This is inherent to the UUIDv7 specification and provides timing information that may not be suitable for all use cases.
+
+**Privacy Implications:**
+- The first 48 bits contain a Unix timestamp with millisecond precision
+- Attackers can extract timing information about system operations
+- Usage patterns and activity correlation may be possible
+- Historical UUIDs reveal exact generation times
+
+**Recommendations:**
+- Use UUIDv4 (random) when timing information should remain private
+- Consider the privacy implications before using UUIDv7 in security-sensitive applications
+- Be aware that UUIDv7 values can be sorted chronologically by creation time
+- Avoid using UUIDv7 for session tokens or other security-critical identifiers where timing correlation is undesirable
+
+**When to use each version:**
+- **UUIDv4**: Maximum privacy, no timing information (recommended for most applications)
+- **UUIDv6/v7**: Database performance benefits, but contains timing information
+
 ## Development
 
 ### Prerequisites

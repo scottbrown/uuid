@@ -22,11 +22,14 @@ var rootCmd = &cobra.Command{
 By default, generates UUIDv4. Use version flags to generate other UUID versions.
 Use the timestamp flag (-t) to generate UUIDv7 from a specific timestamp.
 
+SECURITY NOTE: UUIDv7 contains embedded timestamps that reveal timing information.
+Use UUIDv4 when privacy is important.
+
 Examples:
   uuid                        # Generate UUIDv4 (default)
   uuid -4                     # Generate UUIDv4 (explicit)
   uuid -6                     # Generate UUIDv6
-  uuid -7                     # Generate UUIDv7
+  uuid -7                     # Generate UUIDv7 (contains timestamp)
   uuid -t 1234567890          # Generate UUIDv7 from Unix timestamp
   uuid -t 2023-06-14          # Generate UUIDv7 from date
   uuid -t "2023-06-14 10:30"  # Generate UUIDv7 from date-time`,
@@ -86,7 +89,7 @@ func init() {
 	// Version-specific flags
 	rootCmd.Flags().BoolP("4", "4", false, "Generate UUIDv4 (default)")
 	rootCmd.Flags().BoolP("6", "6", false, "Generate UUIDv6")
-	rootCmd.Flags().BoolP("7", "7", false, "Generate UUIDv7")
+	rootCmd.Flags().BoolP("7", "7", false, "Generate UUIDv7 (contains timestamp)")
 
 	// Timestamp flag for UUIDv7
 	rootCmd.Flags().StringP("timestamp", "t", "", "Generate UUIDv7 from timestamp (Unix seconds/milliseconds, RFC3339, or ISO date)")
