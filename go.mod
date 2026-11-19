@@ -1,6 +1,6 @@
 module github.com/scottbrown/uuid
 
-go 1.24.2
+go 1.27.4
 
 require (
 	github.com/google/uuid v1.6.0
